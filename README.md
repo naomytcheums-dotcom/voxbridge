@@ -94,6 +94,17 @@ are bundled.
 4. Call the number. Open `http://localhost:8000` to watch the call show up
    on the dashboard, live, with the transcript and measured latency.
 
+## Deploying (Render)
+
+`render.yaml` in the repo root is a one-click Blueprint — Render reads it
+automatically. On [render.com](https://render.com): **New → Blueprint**,
+point it at this repo, and it builds `backend/` and starts the server.
+Free tier has no persistent disk, so the start command re-seeds demo data
+on every restart if the call log is empty — real call data just doesn't
+survive a redeploy on the free plan. The public `https://<name>.onrender.com`
+URL Render gives you is also what `TELEPHONY_PUBLIC_URL` should point to
+once a phone number is wired up — no separate tunnel needed.
+
 ## Bilingual by default (French / English)
 
 The caller can speak either language, and switch mid-call — the STT layer

@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: voxbridge
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: python seed_demo_data.py; uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: BUSINESS_NAME
+        value: Aurora Boutique
+      - key: DEEPGRAM_API_KEY
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: TELEPHONY_API_KEY
+        sync: false
+      - key: TELEPHONY_PUBLIC_URL
+        sync: false

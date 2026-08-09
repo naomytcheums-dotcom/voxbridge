@@ -1,6 +1,10 @@
 """Seeds the call log with a few realistic sample calls so the dashboard
 has something to show before a real phone line is connected.
 
+Idempotent — skips seeding if calls already exist, so it's safe to run on
+every deploy/restart (e.g. as part of the start command on a host without
+persistent disk on its free tier) without piling up duplicate demo calls.
+
 Not part of the app itself — a one-off dev utility. Safe to delete once
 real calls start coming in.
 """
@@ -11,6 +15,10 @@ from app.config import get_settings
 
 settings = get_settings()
 log = CallLog(settings.call_log_db_path)
+
+if log.list_calls(limit=1):
+    print("Call log already has data — skipping demo seed.")
+    raise SystemExit(0)
 
 calls = [
     {
