@@ -5,6 +5,11 @@ Audio encoding/sample rate are configurable because the two transports this
 project supports disagree: a browser mic gives linear16 @ 16kHz, a Telnyx
 phone call gives mulaw @ 8kHz. Deepgram accepts both natively, so no manual
 audio conversion is needed on our side — just tell it which one is coming.
+
+`language="multi"` enables code-switching detection (e.g. a caller moving
+between French and English mid-call) on models that support it — verify
+against current Deepgram docs, since language support is model-specific
+and does change between model versions.
 """
 from __future__ import annotations
 
@@ -35,17 +40,20 @@ class DeepgramSTT:
         sample_rate: int = 16000,
         encoding: str = "linear16",
         endpointing_ms: int = 700,
+        language: str = "multi",
     ):
         self._api_key = api_key
         self._model = model
         self._sample_rate = sample_rate
         self._encoding = encoding
         self._endpointing_ms = endpointing_ms
+        self._language = language
         self._ws: websockets.WebSocketClientProtocol | None = None
 
     async def connect(self) -> None:
         params = (
             f"model={self._model}"
+            f"&language={self._language}"
             f"&encoding={self._encoding}"
             f"&sample_rate={self._sample_rate}"
             f"&channels=1"

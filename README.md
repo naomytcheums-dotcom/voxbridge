@@ -94,6 +94,14 @@ are bundled.
 4. Call the number. Open `http://localhost:8000` to watch the call show up
    on the dashboard, live, with the transcript and measured latency.
 
+## Bilingual by default (French / English)
+
+The caller can speak either language, and switch mid-call — the STT layer
+runs Deepgram's code-switching detection (`language=multi`), the LLM is
+instructed to always reply in whichever language the caller just used, and
+TTS runs a multilingual ElevenLabs model instead of an English-only one.
+No separate "language mode" to configure.
+
 ## Running the tests
 
 ```

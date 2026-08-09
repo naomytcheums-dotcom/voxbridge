@@ -41,10 +41,12 @@ class VoiceSession:
             sample_rate=transport.stt_sample_rate,
             encoding=transport.stt_encoding,
             endpointing_ms=settings.end_of_utterance_silence_ms,
+            language=settings.deepgram_language,
         )
         self.tts = ElevenLabsTTS(
             api_key=settings.elevenlabs_api_key,
             voice_id=settings.elevenlabs_voice_id,
+            model_id=settings.elevenlabs_model_id,
             output_format=transport.tts_output_format,
         )
         self.history: list[dict[str, str]] = []

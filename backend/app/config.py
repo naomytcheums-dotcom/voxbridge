@@ -9,10 +9,12 @@ class Settings(BaseSettings):
     # Speech-to-text
     deepgram_api_key: str = ""
     deepgram_model: str = "nova-2"
+    deepgram_language: str = "multi"  # code-switching between the caller's languages, e.g. French/English
 
-    # Text-to-speech
+    # Text-to-speech — the multilingual model is required for non-English output
     elevenlabs_api_key: str = ""
     elevenlabs_voice_id: str = "21m00Tcm4TlvDq8ikWAM"  # default public demo voice
+    elevenlabs_model_id: str = "eleven_turbo_v2_5"
 
     # LLM
     llm_provider: str = "openai"  # "openai" | "anthropic"
@@ -30,7 +32,10 @@ class Settings(BaseSettings):
         "Use the search_products tool whenever the caller mentions any item, color, or budget — "
         "never guess at the catalog. Confirm product, quantity, name, and phone number out loud "
         "before calling start_order. If the caller is upset or asks for a human, call "
-        "escalate_to_human instead of trying to resolve it yourself."
+        "escalate_to_human instead of trying to resolve it yourself. "
+        "The caller may speak French or English, sometimes switching mid-call — always reply in "
+        "whichever language they just used, never mix the two in one reply, and never ask them "
+        "which language they'd prefer."
     )
 
     # Turn-taking

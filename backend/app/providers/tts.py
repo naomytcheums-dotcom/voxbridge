@@ -21,7 +21,7 @@ ELEVENLABS_WS_URL = "wss://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream
 
 
 class ElevenLabsTTS:
-    def __init__(self, api_key: str, voice_id: str, model_id: str = "eleven_turbo_v2",
+    def __init__(self, api_key: str, voice_id: str, model_id: str = "eleven_turbo_v2_5",
                  output_format: str = "mp3_44100_128"):
         self._api_key = api_key
         self._voice_id = voice_id
