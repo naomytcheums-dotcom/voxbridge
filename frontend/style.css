@@ -1,0 +1,89 @@
+:root {
+  --bg: #0b0d10;
+  --fg: #f2f2f2;
+  --muted: #8a8f98;
+  --accent: #5b8cff;
+  --danger: #ff5b6a;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, "Segoe UI", Inter, sans-serif;
+}
+
+main {
+  width: 100%;
+  max-width: 560px;
+  padding: 32px;
+}
+
+h1 {
+  margin: 0 0 4px;
+  font-size: 28px;
+}
+
+.subtitle {
+  color: var(--muted);
+  margin: 0 0 24px;
+  font-size: 14px;
+}
+
+button {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button.active {
+  background: var(--danger);
+}
+
+.status {
+  margin-left: 14px;
+  color: var(--muted);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.transcript {
+  margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.line {
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.4;
+  max-width: 85%;
+}
+
+.line.user {
+  align-self: flex-end;
+  background: var(--accent);
+  color: white;
+}
+
+.line.assistant {
+  align-self: flex-start;
+  background: #1b1e24;
+  color: var(--fg);
+}
