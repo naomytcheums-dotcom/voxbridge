@@ -105,6 +105,11 @@ survive a redeploy on the free plan. The public `https://<name>.onrender.com`
 URL Render gives you is also what `TELEPHONY_PUBLIC_URL` should point to
 once a phone number is wired up — no separate tunnel needed.
 
+A `Dockerfile` is also included at the repo root, for any host that deploys
+from a container instead of a buildpack (e.g. [Koyeb](https://www.koyeb.com),
+whose free instance has no time-based quota, or Render's own Docker deploy
+option) — same start command, same idempotent demo-data seed.
+
 ## Bilingual by default (French / English)
 
 The caller can speak either language, and switch mid-call — the STT layer
