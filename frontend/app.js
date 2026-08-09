@@ -1,10 +1,12 @@
 const callListEl = document.getElementById("callList");
 const transcriptEl = document.getElementById("transcript");
+const orderListEl = document.getElementById("orderList");
 const statCount = document.getElementById("statCount");
 const statP50 = document.getElementById("statP50");
 const statP95 = document.getElementById("statP95");
 
 let activeCallId = null;
+let productsById = {};
 
 function formatDuration(startedAt, endedAt) {
   if (!endedAt) return "in progress";
@@ -68,8 +70,41 @@ async function selectCall(callId) {
   }
 }
 
+async function loadProducts() {
+  if (Object.keys(productsById).length > 0) return; // catalog doesn't change at runtime
+  const res = await fetch("/api/products");
+  const products = await res.json();
+  productsById = Object.fromEntries(products.map((p) => [p.id, p]));
+}
+
+async function loadOrders() {
+  const res = await fetch("/api/orders");
+  const orders = await res.json();
+
+  if (orders.length === 0) {
+    orderListEl.innerHTML = '<p class="empty">No orders yet.</p>';
+    return;
+  }
+
+  orderListEl.innerHTML = "";
+  for (const order of orders) {
+    const product = productsById[order.product_id];
+    const row = document.createElement("div");
+    row.className = "order-row";
+    row.innerHTML = `
+      <span class="product">${product ? product.name + " (" + product.color + ")" : order.product_id}</span>
+      <span>x${order.quantity}</span>
+      <span>${order.customer_name}</span>
+      <span>${order.customer_phone}</span>
+      <span class="status">${order.status.replace("_", " ")}</span>
+    `;
+    orderListEl.appendChild(row);
+  }
+}
+
 async function refresh() {
-  await Promise.all([loadStats(), loadCalls()]);
+  await loadProducts();
+  await Promise.all([loadStats(), loadCalls(), loadOrders()]);
 }
 
 refresh();

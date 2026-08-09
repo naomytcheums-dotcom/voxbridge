@@ -29,6 +29,17 @@ CREATE TABLE IF NOT EXISTS turns (
     text TEXT NOT NULL,
     at REAL NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS orders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    call_id INTEGER REFERENCES calls(id),
+    product_id TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    customer_name TEXT NOT NULL,
+    customer_phone TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending_review',
+    created_at REAL NOT NULL
+);
 """
 
 
@@ -95,6 +106,23 @@ class CallLog:
                 "SELECT role, text, at FROM turns WHERE call_id = ? ORDER BY at ASC", (call_id,)
             ).fetchall()
             return {**dict(call), "turns": [dict(t) for t in turns]}
+
+    def create_order(self, call_id: int | None, product_id: str, quantity: int,
+                      customer_name: str, customer_phone: str) -> int:
+        with self._connect() as conn:
+            cur = conn.execute(
+                "INSERT INTO orders (call_id, product_id, quantity, customer_name, customer_phone, created_at) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (call_id, product_id, quantity, customer_name, customer_phone, time.time()),
+            )
+            return cur.lastrowid
+
+    def list_orders(self, limit: int = 50) -> list[dict]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT * FROM orders ORDER BY created_at DESC LIMIT ?", (limit,)
+            ).fetchall()
+            return [dict(r) for r in rows]
 
     def latency_stats(self) -> dict:
         with self._connect() as conn:

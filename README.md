@@ -6,6 +6,8 @@ catalog and taking orders), and speaks a reply back — interruptible
 mid-sentence, like an actual conversation. A companion dashboard shows
 every call as it happens, since a phone call itself leaves no visual trace.
 
+![Voxbridge call dashboard](docs/dashboard.jpg)
+
 ## Why this exists
 
 Most "AI agent" demos are request/response: send text, wait, get text back.
@@ -50,7 +52,8 @@ Three things this pipeline is specifically built to demonstrate:
   business. It calls real tools (`backend/app/tools.py`) against a real
   catalog (`backend/app/data/products.json`) and only ever creates
   **draft orders requiring human confirmation** — it can't charge or ship
-  anything on its own.
+  anything on its own. Every draft order shows up on the dashboard's
+  Orders panel, not just buried in a transcript.
 
 The server also logs a measured **time-to-first-audio** for every turn —
 the metric that actually matters for how a voice agent *feels*, not just

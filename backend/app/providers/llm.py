@@ -27,7 +27,8 @@ MAX_TOOL_HOPS = 4
 class LLMProvider(ABC):
     @abstractmethod
     async def stream_reply(
-        self, history: list[Message], system_prompt: str, tools: list[dict] | None = None
+        self, history: list[Message], system_prompt: str, tools: list[dict] | None = None,
+        tool_context: dict | None = None,
     ) -> AsyncIterator[str]:
         """Yield raw text deltas for the final, spoken reply.
 
@@ -56,7 +57,8 @@ class OpenAIProvider(LLMProvider):
         self._model = model
 
     async def stream_reply(
-        self, history: list[Message], system_prompt: str, tools: list[dict] | None = None
+        self, history: list[Message], system_prompt: str, tools: list[dict] | None = None,
+        tool_context: dict | None = None,
     ) -> AsyncIterator[str]:
         messages: list[Message] = [{"role": "system", "content": system_prompt}, *history]
         openai_tools = [_to_openai_tool(t) for t in tools] if tools else None
@@ -100,7 +102,7 @@ class OpenAIProvider(LLMProvider):
             })
             for c in ordered:
                 args = json.loads(c["arguments"] or "{}")
-                result = dispatch(c["name"], args)
+                result = dispatch(c["name"], args, tool_context)
                 messages.append({"role": "tool", "tool_call_id": c["id"], "content": json.dumps(result)})
 
 
@@ -112,7 +114,8 @@ class AnthropicProvider(LLMProvider):
         self._model = model
 
     async def stream_reply(
-        self, history: list[Message], system_prompt: str, tools: list[dict] | None = None
+        self, history: list[Message], system_prompt: str, tools: list[dict] | None = None,
+        tool_context: dict | None = None,
     ) -> AsyncIterator[str]:
         messages: list[Message] = list(history)
         anthropic_tools = [_to_anthropic_tool(t) for t in tools] if tools else None
@@ -136,7 +139,7 @@ class AnthropicProvider(LLMProvider):
             messages.append({"role": "assistant", "content": final.content})
             tool_results = []
             for block in tool_uses:
-                result = dispatch(block.name, block.input)
+                result = dispatch(block.name, block.input, tool_context)
                 tool_results.append({"type": "tool_result", "tool_use_id": block.id, "content": json.dumps(result)})
             messages.append({"role": "user", "content": tool_results})
 

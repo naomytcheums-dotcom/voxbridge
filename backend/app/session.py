@@ -95,7 +95,8 @@ class VoiceSession:
         first_audio_sent = False
         reply_parts: list[str] = []
         try:
-            deltas = self.llm.stream_reply(self.history, self.settings.resolved_system_prompt(), TOOLS)
+            tool_context = {"call_log": self.call_log, "call_id": self._call_id}
+            deltas = self.llm.stream_reply(self.history, self.settings.resolved_system_prompt(), TOOLS, tool_context)
             async for sentence in sentence_chunks(deltas):
                 reply_parts.append(sentence)
 

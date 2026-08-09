@@ -53,11 +53,22 @@ calls = [
 ]
 
 now = time.time()
+first_call_id = None
 for i, call in enumerate(calls):
     call_id = log.start_call(call["caller_number"])
+    if i == 0:
+        first_call_id = call_id
     for role, text in call["turns"]:
         log.log_turn(call_id, role, text)
     log.log_first_audio_latency(call_id, call["latency_ms"])
     log.end_call(call_id)
 
-print(f"Seeded {len(calls)} demo calls into {settings.call_log_db_path}")
+log.create_order(
+    call_id=first_call_id,
+    product_id="bag-001",
+    quantity=1,
+    customer_name="Aline Mballa",
+    customer_phone="+237670123456",
+)
+
+print(f"Seeded {len(calls)} demo calls and 1 order into {settings.call_log_db_path}")

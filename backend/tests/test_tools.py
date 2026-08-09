@@ -1,4 +1,4 @@
-from app.orders import get_order
+from app.call_log import CallLog
 from app.tools import dispatch
 
 
@@ -17,19 +17,25 @@ def test_check_stock_unknown_product_returns_error():
     assert "error" in result
 
 
-def test_start_order_creates_a_pending_draft_not_a_confirmed_sale():
+def test_start_order_creates_a_pending_draft_not_a_confirmed_sale(tmp_path):
+    call_log = CallLog(str(tmp_path / "calls.db"))
+    call_id = call_log.start_call("+237600000000")
+
     result = dispatch("start_order", {
         "product_id": "bag-001",
         "quantity": 2,
         "customer_name": "Test Caller",
         "customer_phone": "+237600000000",
-    })
+    }, context={"call_log": call_log, "call_id": call_id})
+
     assert result["status"] == "pending_review"
 
-    order = get_order(result["order_id"])
-    assert order.product_id == "bag-001"
-    assert order.quantity == 2
-    assert order.status == "pending_review"
+    orders = call_log.list_orders()
+    assert len(orders) == 1
+    assert orders[0]["product_id"] == "bag-001"
+    assert orders[0]["quantity"] == 2
+    assert orders[0]["status"] == "pending_review"
+    assert orders[0]["call_id"] == call_id
 
 
 def test_escalate_to_human_passes_through_reason():

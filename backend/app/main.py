@@ -4,6 +4,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request, WebSocket
 from fastapi.staticfiles import StaticFiles
 
+from . import catalog
 from .call_log import CallLog
 from .config import get_settings
 from .providers.llm import build_llm_provider
@@ -80,6 +81,16 @@ def api_get_call(call_id: int) -> dict | None:
 @app.get("/api/stats")
 def api_stats() -> dict:
     return call_log.latency_stats()
+
+
+@app.get("/api/orders")
+def api_list_orders() -> list[dict]:
+    return call_log.list_orders()
+
+
+@app.get("/api/products")
+def api_list_products() -> list[dict]:
+    return catalog.load_catalog()
 
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent / "frontend"

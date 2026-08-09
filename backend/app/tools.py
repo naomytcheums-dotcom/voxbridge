@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from . import catalog, orders
+from . import catalog
 
 TOOLS: list[dict[str, Any]] = [
     {
@@ -67,7 +67,13 @@ TOOLS: list[dict[str, Any]] = [
 ]
 
 
-def dispatch(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+def dispatch(name: str, arguments: dict[str, Any], context: dict[str, Any] | None = None) -> dict[str, Any]:
+    """`context` carries call-scoped dependencies (the call log, the current
+    call id) that tools need but shouldn't have to be threaded through the
+    LLM providers' own signatures — see session.py for what it passes in.
+    """
+    context = context or {}
+
     if name == "search_products":
         results = catalog.search_products(
             query=arguments.get("query", ""),
@@ -83,13 +89,15 @@ def dispatch(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         return {"product_id": product["id"], "stock": product["stock"]}
 
     if name == "start_order":
-        order = orders.create_draft_order(
+        call_log = context["call_log"]
+        order_id = call_log.create_order(
+            call_id=context.get("call_id"),
             product_id=arguments["product_id"],
             quantity=arguments["quantity"],
             customer_name=arguments["customer_name"],
             customer_phone=arguments["customer_phone"],
         )
-        return {"order_id": order.id, "status": order.status}
+        return {"order_id": order_id, "status": "pending_review"}
 
     if name == "escalate_to_human":
         return {"escalated": True, "reason": arguments.get("reason", "")}
