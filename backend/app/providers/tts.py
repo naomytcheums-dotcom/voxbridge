@@ -1,11 +1,16 @@
 """Streaming text-to-speech provider (ElevenLabs real-time API).
 
 Protocol reference: https://elevenlabs.io/docs/api-reference/websockets
-Yields raw audio bytes (mp3) as they arrive, so playback can start on the
-first chunk instead of waiting for the whole sentence to be synthesized.
+Yields raw audio bytes as they arrive, so playback can start on the first
+chunk instead of waiting for the whole sentence to be synthesized.
+
+`output_format` matters: a phone call needs mulaw @ 8kHz to hand straight
+to the carrier with no conversion, which is a different encoding than
+you'd want for, say, saving the audio to a file.
 """
 from __future__ import annotations
 
+import asyncio
 import base64
 import json
 from typing import AsyncIterator
@@ -16,14 +21,19 @@ ELEVENLABS_WS_URL = "wss://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream
 
 
 class ElevenLabsTTS:
-    def __init__(self, api_key: str, voice_id: str, model_id: str = "eleven_turbo_v2"):
+    def __init__(self, api_key: str, voice_id: str, model_id: str = "eleven_turbo_v2",
+                 output_format: str = "mp3_44100_128"):
         self._api_key = api_key
         self._voice_id = voice_id
         self._model_id = model_id
+        self._output_format = output_format
 
     async def speak(self, text_chunks: AsyncIterator[str]) -> AsyncIterator[bytes]:
         """Streams `text_chunks` (e.g. one sentence at a time) in and audio bytes out."""
-        url = f"{ELEVENLABS_WS_URL.format(voice_id=self._voice_id)}?model_id={self._model_id}"
+        url = (
+            f"{ELEVENLABS_WS_URL.format(voice_id=self._voice_id)}"
+            f"?model_id={self._model_id}&output_format={self._output_format}"
+        )
         async with websockets.connect(url) as ws:
             await ws.send(json.dumps({
                 "text": " ",
@@ -36,7 +46,6 @@ class ElevenLabsTTS:
                     await ws.send(json.dumps({"text": chunk + " "}))
                 await ws.send(json.dumps({"text": ""}))  # signal end of input
 
-            import asyncio
             sender_task = asyncio.create_task(_sender())
 
             try:

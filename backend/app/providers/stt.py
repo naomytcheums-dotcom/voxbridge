@@ -1,7 +1,10 @@
 """Streaming speech-to-text provider (Deepgram real-time API).
 
 Protocol reference: https://developers.deepgram.com/docs/streaming
-Audio format expected by this client: 16-bit PCM, mono, 16kHz.
+Audio encoding/sample rate are configurable because the two transports this
+project supports disagree: a browser mic gives linear16 @ 16kHz, a Telnyx
+phone call gives mulaw @ 8kHz. Deepgram accepts both natively, so no manual
+audio conversion is needed on our side — just tell it which one is coming.
 """
 from __future__ import annotations
 
@@ -25,17 +28,25 @@ class TranscriptEvent:
 class DeepgramSTT:
     """Wraps a single Deepgram streaming session for one voice call."""
 
-    def __init__(self, api_key: str, model: str, sample_rate: int = 16000, endpointing_ms: int = 700):
+    def __init__(
+        self,
+        api_key: str,
+        model: str,
+        sample_rate: int = 16000,
+        encoding: str = "linear16",
+        endpointing_ms: int = 700,
+    ):
         self._api_key = api_key
         self._model = model
         self._sample_rate = sample_rate
+        self._encoding = encoding
         self._endpointing_ms = endpointing_ms
         self._ws: websockets.WebSocketClientProtocol | None = None
 
     async def connect(self) -> None:
         params = (
             f"model={self._model}"
-            f"&encoding=linear16"
+            f"&encoding={self._encoding}"
             f"&sample_rate={self._sample_rate}"
             f"&channels=1"
             f"&interim_results=true"

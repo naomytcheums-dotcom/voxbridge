@@ -1,9 +1,10 @@
 :root {
   --bg: #0b0d10;
+  --panel: #14171c;
   --fg: #f2f2f2;
   --muted: #8a8f98;
   --accent: #5b8cff;
-  --danger: #ff5b6a;
+  --line: #22262d;
 }
 
 * { box-sizing: border-box; }
@@ -11,61 +12,107 @@
 body {
   margin: 0;
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   background: var(--bg);
   color: var(--fg);
   font-family: -apple-system, "Segoe UI", Inter, sans-serif;
 }
 
 main {
-  width: 100%;
-  max-width: 560px;
-  padding: 32px;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 40px 24px;
 }
 
-h1 {
+header h1 {
   margin: 0 0 4px;
-  font-size: 28px;
+  font-size: 26px;
 }
 
 .subtitle {
   color: var(--muted);
-  margin: 0 0 24px;
+  margin: 0 0 28px;
   font-size: 14px;
 }
 
-button {
-  background: var(--accent);
-  color: white;
-  border: none;
-  border-radius: 999px;
-  padding: 12px 24px;
-  font-size: 15px;
+.stats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.stat {
+  flex: 1;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-value {
+  font-size: 24px;
   font-weight: 600;
-  cursor: pointer;
 }
 
-button.active {
-  background: var(--danger);
+.stat-label {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
-.status {
-  margin-left: 14px;
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 16px;
+}
+
+.call-list, .transcript-panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px;
+  min-height: 360px;
+  max-height: 560px;
+  overflow-y: auto;
+}
+
+.empty {
   color: var(--muted);
   font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  padding: 16px;
 }
 
-.transcript {
-  margin-top: 28px;
+.call-row {
+  padding: 12px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.call-row:hover, .call-row.active {
+  background: #1b1f26;
+}
+
+.call-row .caller {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.call-row .meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.transcript-panel {
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: 360px;
-  overflow-y: auto;
 }
 
 .line {
@@ -76,7 +123,7 @@ button.active {
   max-width: 85%;
 }
 
-.line.user {
+.line.caller {
   align-self: flex-end;
   background: var(--accent);
   color: white;
@@ -85,5 +132,4 @@ button.active {
 .line.assistant {
   align-self: flex-start;
   background: #1b1e24;
-  color: var(--fg);
 }

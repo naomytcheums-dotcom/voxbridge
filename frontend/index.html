@@ -3,18 +3,30 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Voxbridge — real-time voice agent demo</title>
+<title>Voxbridge — call dashboard</title>
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 <main>
-  <h1>Voxbridge</h1>
-  <p class="subtitle">Real-time voice agent running entirely in your browser — no phone number required.</p>
+  <header>
+    <h1>Voxbridge</h1>
+    <p class="subtitle">Live log of every phone call this agent has handled.</p>
+  </header>
 
-  <button id="callBtn">Start call</button>
-  <span id="status" class="status">idle</span>
+  <section class="stats" id="stats">
+    <div class="stat"><span class="stat-value" id="statCount">–</span><span class="stat-label">calls answered</span></div>
+    <div class="stat"><span class="stat-value" id="statP50">–</span><span class="stat-label">p50 time-to-first-audio</span></div>
+    <div class="stat"><span class="stat-value" id="statP95">–</span><span class="stat-label">p95 time-to-first-audio</span></div>
+  </section>
 
-  <div id="transcript" class="transcript"></div>
+  <section class="layout">
+    <div id="callList" class="call-list">
+      <p class="empty">No calls yet — dial the number to see one show up here.</p>
+    </div>
+    <div id="transcript" class="transcript-panel">
+      <p class="empty">Select a call to see its transcript.</p>
+    </div>
+  </section>
 </main>
 <script src="app.js"></script>
 </body>

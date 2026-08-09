@@ -1,127 +1,76 @@
-const callBtn = document.getElementById("callBtn");
-const statusEl = document.getElementById("status");
+const callListEl = document.getElementById("callList");
 const transcriptEl = document.getElementById("transcript");
+const statCount = document.getElementById("statCount");
+const statP50 = document.getElementById("statP50");
+const statP95 = document.getElementById("statP95");
 
-let ws = null;
-let micContext = null;
-let micStream = null;
+let activeCallId = null;
 
-// --- playback state: schedules incoming audio chunks back-to-back so
-// speech sounds continuous instead of chopped into gaps between chunks ---
-let playbackContext = null;
-let nextStartTime = 0;
-let activeSources = [];
-
-function setStatus(text) {
-  statusEl.textContent = text;
+function formatDuration(startedAt, endedAt) {
+  if (!endedAt) return "in progress";
+  const seconds = Math.round(endedAt - startedAt);
+  return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
 }
 
-function addLine(role, text) {
-  const div = document.createElement("div");
-  div.className = `line ${role}`;
-  div.textContent = text;
-  transcriptEl.appendChild(div);
-  transcriptEl.scrollTop = transcriptEl.scrollHeight;
+function formatTime(ts) {
+  return new Date(ts * 1000).toLocaleString();
 }
 
-async function startCall() {
-  micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  micContext = new AudioContext();
-  await micContext.audioWorklet.addModule("pcm-processor.js");
-
-  playbackContext = new AudioContext();
-  nextStartTime = 0;
-
-  const protocol = location.protocol === "https:" ? "wss" : "ws";
-  ws = new WebSocket(`${protocol}://${location.host}/ws`);
-  ws.binaryType = "arraybuffer";
-
-  ws.onopen = () => {
-    setStatus("listening");
-    const source = micContext.createMediaStreamSource(micStream);
-    const worklet = new AudioWorkletNode(micContext, "pcm-processor");
-    worklet.port.onmessage = (event) => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(event.data);
-      }
-    };
-    source.connect(worklet);
-  };
-
-  ws.onmessage = async (event) => {
-    if (typeof event.data === "string") {
-      handleControlMessage(JSON.parse(event.data));
-    } else {
-      await playAudioChunk(event.data);
-    }
-  };
-
-  ws.onclose = () => setStatus("call ended");
-
-  callBtn.textContent = "End call";
-  callBtn.classList.add("active");
+async function loadStats() {
+  const res = await fetch("/api/stats");
+  const stats = await res.json();
+  statCount.textContent = stats.count;
+  statP50.textContent = stats.p50_ms ? `${Math.round(stats.p50_ms)}ms` : "–";
+  statP95.textContent = stats.p95_ms ? `${Math.round(stats.p95_ms)}ms` : "–";
 }
 
-function handleControlMessage(msg) {
-  if (msg.type === "transcript") {
-    addLine("user", msg.text);
-  } else if (msg.type === "assistant_text") {
-    addLine("assistant", msg.text);
-    setStatus("speaking");
-  } else if (msg.type === "stop_audio") {
-    stopPlayback();
-    setStatus("listening");
-  } else if (msg.type === "assistant_done") {
-    setStatus("listening");
+async function loadCalls() {
+  const res = await fetch("/api/calls");
+  const calls = await res.json();
+
+  if (calls.length === 0) {
+    callListEl.innerHTML = '<p class="empty">No calls yet — dial the number to see one show up here.</p>';
+    return;
+  }
+
+  callListEl.innerHTML = "";
+  for (const call of calls) {
+    const row = document.createElement("div");
+    row.className = "call-row" + (call.id === activeCallId ? " active" : "");
+    row.innerHTML = `
+      <span class="caller">${call.caller_number || "Unknown caller"}</span>
+      <span class="meta">${formatTime(call.started_at)} · ${formatDuration(call.started_at, call.ended_at)}
+        ${call.first_audio_latency_ms ? `· ${Math.round(call.first_audio_latency_ms)}ms first reply` : ""}</span>
+    `;
+    row.addEventListener("click", () => selectCall(call.id));
+    callListEl.appendChild(row);
   }
 }
 
-async function playAudioChunk(arrayBuffer) {
-  const audioData = await playbackContext.decodeAudioData(arrayBuffer.slice(0));
-  const source = playbackContext.createBufferSource();
-  source.buffer = audioData;
-  source.connect(playbackContext.destination);
+async function selectCall(callId) {
+  activeCallId = callId;
+  await loadCalls();
 
-  const now = playbackContext.currentTime;
-  const startAt = Math.max(now, nextStartTime);
-  source.start(startAt);
-  nextStartTime = startAt + audioData.duration;
+  const res = await fetch(`/api/calls/${callId}`);
+  const call = await res.json();
 
-  activeSources.push(source);
-  source.onended = () => {
-    activeSources = activeSources.filter((s) => s !== source);
-  };
-}
-
-function stopPlayback() {
-  for (const source of activeSources) {
-    try {
-      source.stop();
-    } catch {
-      // already stopped — ignore
-    }
+  if (!call.turns || call.turns.length === 0) {
+    transcriptEl.innerHTML = '<p class="empty">No turns recorded for this call yet.</p>';
+    return;
   }
-  activeSources = [];
-  nextStartTime = playbackContext ? playbackContext.currentTime : 0;
-}
 
-function endCall() {
-  ws?.close();
-  micStream?.getTracks().forEach((track) => track.stop());
-  micContext?.close();
-  playbackContext?.close();
-  callBtn.textContent = "Start call";
-  callBtn.classList.remove("active");
-  setStatus("idle");
-}
-
-callBtn.addEventListener("click", () => {
-  if (callBtn.classList.contains("active")) {
-    endCall();
-  } else {
-    startCall().catch((err) => {
-      console.error(err);
-      setStatus("microphone error");
-    });
+  transcriptEl.innerHTML = "";
+  for (const turn of call.turns) {
+    const div = document.createElement("div");
+    div.className = `line ${turn.role}`;
+    div.textContent = turn.text;
+    transcriptEl.appendChild(div);
   }
-});
+}
+
+async function refresh() {
+  await Promise.all([loadStats(), loadCalls()]);
+}
+
+refresh();
+setInterval(refresh, 4000);

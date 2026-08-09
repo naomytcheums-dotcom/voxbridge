@@ -1,8 +1,10 @@
 # Voxbridge
 
-A real-time voice agent that runs entirely in the browser: speak into your
-mic, get a spoken reply back, and interrupt it mid-sentence like a real
-phone call — no telephony number or SIP trunk required to try it.
+A real-time voice agent that answers real phone calls: it transcribes what
+the caller says, reasons about it (including looking things up in a product
+catalog and taking orders), and speaks a reply back — interruptible
+mid-sentence, like an actual conversation. A companion dashboard shows
+every call as it happens, since a phone call itself leaves no visual trace.
 
 ## Why this exists
 
@@ -17,21 +19,24 @@ and extended rather than just run as a black box.
 ## What it actually does
 
 ```
- mic (browser) --PCM16/16kHz--> WebSocket --> Deepgram (streaming STT)
-                                                     |
-                                          final transcript ready
-                                                     v
-                                            LLM (OpenAI or Anthropic)
-                                          streamed token by token
-                                                     v
-                                   sentence boundary reached --> ElevenLabs (streaming TTS)
-                                                     |
-                                        audio bytes streamed back
-                                                     v
-                            WebSocket --> browser AudioContext --> speaker
+ caller's phone --carrier's media stream--> WebSocket --> Deepgram (streaming STT)
+                                                                 |
+                                                      final transcript ready
+                                                                 v
+                                                        LLM (OpenAI or Anthropic)
+                                              streamed token by token, with tools:
+                                       search_products / check_stock / start_order / escalate_to_human
+                                                                 v
+                                       sentence boundary reached --> ElevenLabs (streaming TTS)
+                                                                 |
+                                                    audio streamed back to the carrier
+                                                                 v
+                                                          caller hears the reply
+
+Every turn is written to CallLog (SQLite) as it happens --> dashboard reads from there
 ```
 
-Two things this pipeline is specifically built to demonstrate:
+Three things this pipeline is specifically built to demonstrate:
 
 - **Incremental synthesis** — the first sentence of the reply is spoken
   while the LLM is still generating the rest of it (see
@@ -39,35 +44,52 @@ Two things this pipeline is specifically built to demonstrate:
   waiting for the full response before any audio goes out.
 - **Barge-in** — Deepgram's `vad_events` tells the server the instant the
   caller starts speaking again. If the assistant is still talking, its
-  in-flight LLM/TTS task is cancelled and the browser is told to stop
+  in-flight LLM/TTS task is cancelled and the carrier is told to clear
   playback immediately (`backend/app/session.py`, `_barge_in()`).
+- **Tool-calling depth** — the agent doesn't improvise answers about the
+  business. It calls real tools (`backend/app/tools.py`) against a real
+  catalog (`backend/app/data/products.json`) and only ever creates
+  **draft orders requiring human confirmation** — it can't charge or ship
+  anything on its own.
 
 The server also logs a measured **time-to-first-audio** for every turn —
 the metric that actually matters for how a voice agent *feels*, not just
-whether it eventually answers correctly.
+whether it eventually answers correctly. The dashboard aggregates it into
+p50/p95 across every call.
+
+## Telephony is carrier-agnostic by design
+
+`backend/app/providers/telephony.py` defines a `CallTransport` interface —
+answer a call, stream audio in, stream audio out, clear playback for
+barge-in. One carrier is implemented against it so far, but nothing in
+`session.py` or anywhere else in the app knows or cares which one —
+swapping carriers later means adding one more class in that file, not
+rewriting the pipeline. Which carrier is active is one line in `.env`
+(`TELEPHONY_PROVIDER`), not something hardcoded through the codebase.
+
+**Known gap**: the exact Media Streaming message shape (field/event names)
+is implemented to the best of current documented knowledge and should be
+re-verified against the carrier's live docs before a first real call —
+these details do shift between API versions.
 
 ## Running it
 
-Nothing in this repo works without your own API keys — none are bundled.
+Nothing in this repo works without your own API keys and accounts — none
+are bundled.
 
 1. `cd backend && pip install -r requirements.txt`
 2. `cp ../.env.example .env` and fill in your own keys:
    - [Deepgram](https://console.deepgram.com) for speech-to-text (free trial credit)
    - [ElevenLabs](https://elevenlabs.io) for text-to-speech (free tier available)
    - OpenAI or Anthropic for the LLM (set `LLM_PROVIDER` accordingly)
+   - A telephony carrier: buy a number, get an API key, and set
+     `TELEPHONY_PUBLIC_URL` to a public https URL this server is reachable
+     at (a real deploy, or an `ngrok http 8000` tunnel while testing locally
+     — the carrier can't reach `localhost`). Point the carrier's webhook at
+     `<TELEPHONY_PUBLIC_URL>/telephony/webhook`.
 3. `uvicorn app.main:app --reload --app-dir backend`
-4. Open `http://localhost:8000`, click **Start call**, and talk.
-
-## Business depth: catalog search and order taking
-
-The agent isn't just a chatty voice — it has tools it can call mid-conversation
-(`backend/app/tools.py`): `search_products`, `check_stock`, `start_order`, and
-`escalate_to_human`. When a caller says "do you have a red bag?", the model
-calls `search_products(query="bag", color="red")` against the catalog in
-`backend/app/data/products.json` instead of guessing. Orders are created as
-**drafts requiring human confirmation** (`backend/app/orders.py`) — the agent
-can never charge or ship anything on its own. Swap the JSON file for a real
-database or vector search and nothing else changes.
+4. Call the number. Open `http://localhost:8000` to watch the call show up
+   on the dashboard, live, with the transcript and measured latency.
 
 ## Running the tests
 
@@ -75,21 +97,18 @@ database or vector search and nothing else changes.
 cd backend && pip install -r requirements.txt && pytest -q
 ```
 
-16 tests, all offline — catalog search, tool dispatch, and the
-sentence-chunking logic that drives incremental TTS. No API keys needed to
-run them.
+24 tests, all offline — catalog search, tool dispatch, the call log, and
+the sentence-chunking logic that drives incremental TTS. No API keys or
+phone calls needed to run them.
 
 ## Known limitations (by design, documented rather than hidden)
 
-- The mic downsampler in `pcm-processor.js` is nearest-neighbour, not a
-  proper band-limited resampler — fine for speech recognition, not
-  audiophile-grade.
-- This is a browser demo, not a phone line. Extending it to real calls
-  means swapping the browser WebSocket for Twilio Media Streams (or a SIP
-  trunk via LiveKit) feeding the same `VoiceSession` — the STT/LLM/TTS
-  pipeline in `backend/app/` doesn't change, only the audio transport does.
+- Telephony message field names are implemented from documented knowledge,
+  not verified against a live call yet — see the gap noted above.
 - Conversation memory lives only for the duration of one call; there's no
-  cross-session persistence.
+  cross-session persistence or caller recognition across calls.
+- The call log is a single SQLite file — fine for one business's call
+  volume, not built for concurrent multi-tenant scale.
 
 ## License
 
