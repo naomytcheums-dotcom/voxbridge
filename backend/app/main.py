@@ -15,7 +15,11 @@ logger = logging.getLogger("voxbridge.main")
 
 app = FastAPI(title="Voxbridge")
 settings = get_settings()
-call_log = CallLog(settings.call_log_db_path)
+
+_db_path = Path(settings.call_log_db_path)
+if not _db_path.is_absolute():
+    _db_path = Path(__file__).resolve().parent.parent / _db_path
+call_log = CallLog(str(_db_path))
 
 
 def _stream_url() -> str:

@@ -101,6 +101,31 @@ cd backend && pip install -r requirements.txt && pytest -q
 the sentence-chunking logic that drives incremental TTS. No API keys or
 phone calls needed to run them.
 
+## Benchmark (no phone call needed)
+
+`backend/benchmark.py` runs a fixed set of realistic caller utterances
+straight through the real LLM + TTS pipeline and reports measured
+time-to-first-audio, split by whether the turn needed a tool call (a tool
+call means a full extra LLM round-trip before any audio can start, so it
+should — and does — cost more):
+
+```
+cd backend && python benchmark.py --runs 5
+```
+
+Requires real LLM + ElevenLabs keys in `.env`. Doesn't touch telephony or
+STT, so it works identically before or after a phone number is wired up.
+
+## Seeding demo data
+
+Before a real phone line is connected, `backend/seed_demo_data.py` fills
+the call log with a few realistic sample calls so the dashboard has
+something to show:
+
+```
+cd backend && python seed_demo_data.py
+```
+
 ## Known limitations (by design, documented rather than hidden)
 
 - Telephony message field names are implemented from documented knowledge,
