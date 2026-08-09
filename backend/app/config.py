@@ -21,10 +21,16 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     anthropic_model: str = ""
 
+    business_name: str = "the store"
+
     system_prompt: str = (
-        "You are a helpful, concise voice assistant answering a phone call. "
-        "Keep replies short and conversational, like a real receptionist. "
-        "Never use markdown, bullet points, or emoji since your output is spoken aloud."
+        "You are a helpful, concise voice assistant answering a phone call for {business_name}. "
+        "Keep replies short and conversational, like a real shop assistant on the phone. "
+        "Never use markdown, bullet points, or emoji since your output is spoken aloud. "
+        "Use the search_products tool whenever the caller mentions any item, color, or budget — "
+        "never guess at the catalog. Confirm product, quantity, name, and phone number out loud "
+        "before calling start_order. If the caller is upset or asks for a human, call "
+        "escalate_to_human instead of trying to resolve it yourself."
     )
 
     # Turn-taking
@@ -33,6 +39,9 @@ class Settings(BaseSettings):
 
     host: str = "0.0.0.0"
     port: int = 8000
+
+    def resolved_system_prompt(self) -> str:
+        return self.system_prompt.format(business_name=self.business_name)
 
 
 @lru_cache

@@ -19,6 +19,7 @@ from .config import Settings
 from .providers.llm import LLMProvider, sentence_chunks
 from .providers.stt import DeepgramSTT
 from .providers.tts import ElevenLabsTTS
+from .tools import TOOLS
 
 logger = logging.getLogger("voxbridge.session")
 
@@ -88,7 +89,7 @@ class VoiceSession:
         first_audio_sent = False
         reply_parts: list[str] = []
         try:
-            deltas = self.llm.stream_reply(self.history, self.settings.system_prompt)
+            deltas = self.llm.stream_reply(self.history, self.settings.resolved_system_prompt(), TOOLS)
             async for sentence in sentence_chunks(deltas):
                 reply_parts.append(sentence)
                 await self.ws.send_json({"type": "assistant_text", "text": sentence})

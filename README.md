@@ -58,6 +58,27 @@ Nothing in this repo works without your own API keys — none are bundled.
 3. `uvicorn app.main:app --reload --app-dir backend`
 4. Open `http://localhost:8000`, click **Start call**, and talk.
 
+## Business depth: catalog search and order taking
+
+The agent isn't just a chatty voice — it has tools it can call mid-conversation
+(`backend/app/tools.py`): `search_products`, `check_stock`, `start_order`, and
+`escalate_to_human`. When a caller says "do you have a red bag?", the model
+calls `search_products(query="bag", color="red")` against the catalog in
+`backend/app/data/products.json` instead of guessing. Orders are created as
+**drafts requiring human confirmation** (`backend/app/orders.py`) — the agent
+can never charge or ship anything on its own. Swap the JSON file for a real
+database or vector search and nothing else changes.
+
+## Running the tests
+
+```
+cd backend && pip install -r requirements.txt && pytest -q
+```
+
+16 tests, all offline — catalog search, tool dispatch, and the
+sentence-chunking logic that drives incremental TTS. No API keys needed to
+run them.
+
 ## Known limitations (by design, documented rather than hidden)
 
 - The mic downsampler in `pcm-processor.js` is nearest-neighbour, not a

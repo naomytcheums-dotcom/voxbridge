@@ -5,3 +5,6 @@ pydantic-settings>=2.3
 python-dotenv>=1.0
 openai>=1.30
 anthropic>=0.28
+
+pytest>=8.2
+pytest-asyncio>=0.23

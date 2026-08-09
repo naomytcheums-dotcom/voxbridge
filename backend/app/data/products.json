@@ -1,0 +1,10 @@
+[
+  {"id": "bag-001", "name": "Leather Tote Bag", "category": "bags", "color": "red", "price": 25000, "currency": "FCFA", "stock": 4},
+  {"id": "bag-002", "name": "Leather Tote Bag", "category": "bags", "color": "black", "price": 25000, "currency": "FCFA", "stock": 9},
+  {"id": "bag-003", "name": "Canvas Crossbody Bag", "category": "bags", "color": "red", "price": 12000, "currency": "FCFA", "stock": 0},
+  {"id": "bag-004", "name": "Canvas Crossbody Bag", "category": "bags", "color": "beige", "price": 12000, "currency": "FCFA", "stock": 6},
+  {"id": "shoe-001", "name": "Classic Sneakers", "category": "shoes", "color": "white", "price": 18000, "currency": "FCFA", "stock": 11},
+  {"id": "shoe-002", "name": "Classic Sneakers", "category": "shoes", "color": "black", "price": 18000, "currency": "FCFA", "stock": 3},
+  {"id": "acc-001", "name": "Beaded Bracelet", "category": "accessories", "color": "multicolor", "price": 3500, "currency": "FCFA", "stock": 20},
+  {"id": "acc-002", "name": "Sunglasses", "category": "accessories", "color": "black", "price": 8000, "currency": "FCFA", "stock": 7}
+]
